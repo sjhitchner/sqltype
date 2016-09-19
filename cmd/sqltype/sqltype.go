@@ -41,7 +41,7 @@ func (t *{{ .Type }}) Scan(value interface{}) error {
 	return nil
 }
 
-func (t {{ .Type }}) Value(v interface{}) (driver.Value, error) {
+func (t {{ .Type }}) Value() (driver.Value, error) {
 	return {{ .Primative }}(t), nil
 }
 `
@@ -63,6 +63,7 @@ func init() {
 }
 
 func main() {
+	log.SetFlags(0)
 	flag.Parse()
 
 	if typeName == "" {
@@ -84,7 +85,7 @@ func main() {
 		Type:      typeName,
 	}
 
-	filename := fmt.Sprintf("%s_sql.go", strings.ToLower(typeName))
+	filename := fmt.Sprintf("sql_%s.go", strings.ToLower(typeName))
 	file, err := os.Create(filename)
 	if err != nil {
 		log.Fatal(err)
