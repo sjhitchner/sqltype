@@ -44,6 +44,54 @@ func (t *{{ .Type }}) Scan(value interface{}) error {
 func (t {{ .Type }}) Value() (driver.Value, error) {
 	return {{ .Primative }}(t), nil
 }
+
+
+func (t *StringList) Scan(value interface{}) error {
+
+	if value == nil {
+		return nil
+	}
+
+	buf, ok := value.([]byte)
+	if !ok {
+		return errors.Errorf("%s Can't cast '%v' to []byte", reflect.TypeOf(t), value)
+	}
+
+	reader := bytes.NewReader(buf)
+
+	list, err := pickle.ListOrTuple(pickle.Unpickle(reader))
+	if err != nil {
+		return errors.Wrapf(err, "%s Can't convert '%v' to list", reflect.TypeOf(t), value)
+	}
+
+	fmt.Println("LIST", list)
+
+	slist := make([]string, 0, len(list))
+	for _, l := range list {
+		slist = append(slist, l.(string))
+	}
+	*t = slist
+	return nil
+}
+
+	pickle "github.com/hydrogen18/stalecucumber"
+func (t StringList) Value() (driver.Value, error) {
+	buf := new(bytes.Buffer)
+	if _, err := pickle.NewPickler(buf).Pickle(t); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (t StringListList) Value() (driver.Value, error) {
+	buf := new(bytes.Buffer)
+	if _, err := pickle.NewPickler(buf).Pickle(t); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+
 `
 
 type Scanner struct {
