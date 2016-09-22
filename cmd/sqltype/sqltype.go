@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	//	pickle "github.com/hydrogen18/stalecucumber"
 	"github.com/pkg/errors"
 	"go/build"
 	"go/format"
@@ -44,7 +45,70 @@ func (t *{{ .Type }}) Scan(value interface{}) error {
 func (t {{ .Type }}) Value() (driver.Value, error) {
 	return {{ .Primative }}(t), nil
 }
+`
 
+/*
+func (t *RewardTargetId) Scan(value interface{}) error {
+	fmt.Println("VALUE", value, reflect.TypeOf(value))
+
+	s, err := ConvertString(value)
+	if err != nil {
+		return errors.Wrapf(err, "%s Can't convert '%v' to string %s", reflect.TypeOf(t), value, s)
+	}
+	*t = RewardTargetId(s)
+	return nil
+}
+
+func (t RewardTargetId) Value() (driver.Value, error) {
+	return string(t), nil
+}
+
+func ConvertString(value interface{}) (string, error) {
+	switch t := value.(type) {
+	case string:
+		return t, nil
+	case []byte:
+		return string(t), nil
+	case nil:
+		return "", nil
+	default:
+		return "", errors.Errorf("Underlying value %v is not a string")
+	}
+}
+
+func ConvertInt(value interface{}) (string, error) {
+	switch t := value.(type) {
+	case string:
+		return t, nil
+	case []byte:
+		return string(t), nil
+	case nil:
+		return "", nil
+	default:
+		return "", errors.Errorf("Underlying value %v is not a string")
+	}
+}
+
+func ConvertFloat(value interface{}) (string, error) {
+	switch t := value.(type) {
+	case string:
+		return t, nil
+	case []byte:
+		return string(t), nil
+	case nil:
+		return "", nil
+	default:
+		return "", errors.Errorf("Underlying value %v is not a string")
+	}
+}
+
+func ConvertBool(value interface{}) (bool, error) {
+	b, err := driver.Bool.ConvertValue(value)
+	if err != nil {
+		return err
+	}
+	return b.(bool)
+}
 
 func (t *StringList) Scan(value interface{}) error {
 
@@ -74,7 +138,6 @@ func (t *StringList) Scan(value interface{}) error {
 	return nil
 }
 
-	pickle "github.com/hydrogen18/stalecucumber"
 func (t StringList) Value() (driver.Value, error) {
 	buf := new(bytes.Buffer)
 	if _, err := pickle.NewPickler(buf).Pickle(t); err != nil {
@@ -90,9 +153,7 @@ func (t StringListList) Value() (driver.Value, error) {
 	}
 	return buf.Bytes(), nil
 }
-
-
-`
+*/
 
 type Scanner struct {
 	Package   string
