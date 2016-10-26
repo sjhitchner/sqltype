@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"testing"
 )
 
@@ -94,6 +93,4 @@ func TestSqlTypePythonList(t *testing.T) {
 	if buf.Len() == 0 {
 		t.Fatalf("Nothing generated")
 	}
-
-	fmt.Println(buf.String())
 }

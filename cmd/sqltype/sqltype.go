@@ -131,8 +131,8 @@ func (t *{{ .Type }}) Scan(value interface{}) error {
 			return fmt.Errorf("%s Can't convert '%v' to []byte", reflect.TypeOf(t), value)
 		}
 
-		list := make([]{{ .Type }},0)
-		err := stalecucumber.UnpackInto(&list).From(stalecucumber.Unpickle(bytes.NewReader(b)))
+		list := make({{ .Type }},0)
+		err := pickle.UnpackInto(&list).From(pickle.Unpickle(bytes.NewReader(b)))
 		if err != nil {
 			return fmt.Errorf("%s Can't convert '%v' to list %v", reflect.TypeOf(t), value, err)
 		}
