@@ -58,7 +58,10 @@ import (
 	{{if eq .Primative "int"}}
 	"strconv"
 	{{end}}
-	{{if eq .Primative "pythondict"}}
+	{{if or (eq .Primative "pythondict") (eq .Primative "pythonlist") }}
+	"bytes"
+	pickle "github.com/hydrogen18/stalecucumber"
+	{{else if eq .Primative "pythonlist"}}
 	"bytes"
 	pickle "github.com/hydrogen18/stalecucumber"
 	{{end}}
@@ -117,6 +120,24 @@ func (t *{{ .Type }}) Scan(value interface{}) error {
 		}
 		*t = {{ .Type }}(dict)
 
+	{{else if eq .Primative  "pythonlist"}}
+
+		if value == nil {
+			return nil
+		}
+
+		b, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("%s Can't convert '%v' to []byte", reflect.TypeOf(t), value)
+		}
+
+		list := make([]{{ .Type }},0)
+		err := stalecucumber.UnpackInto(&list).From(stalecucumber.Unpickle(bytes.NewReader(b)))
+		if err != nil {
+			return fmt.Errorf("%s Can't convert '%v' to list %v", reflect.TypeOf(t), value, err)
+		}
+		*t = list
+
 	{{end}}
 
 	return nil
@@ -124,7 +145,7 @@ func (t *{{ .Type }}) Scan(value interface{}) error {
 
 func (t {{ .Type }}) Value() (driver.Value, error) {
 
-	{{if eq .Primative "pythondict"}}
+	{{if or (eq .Primative "pythondict") (eq .Primative "pythonlist") }}
 		buf := new(bytes.Buffer)
 		if _, err := pickle.NewPickler(buf).Pickle(t); err != nil {
 			return nil, err

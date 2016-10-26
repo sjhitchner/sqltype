@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 )
 
@@ -75,4 +76,24 @@ func TestSqlTypePythonDict(t *testing.T) {
 	if buf.Len() == 0 {
 		t.Fatalf("Nothing generated")
 	}
+}
+
+func TestSqlTypePythonList(t *testing.T) {
+	scanner := Scanner{
+		Package:   "test",
+		Primative: "pythonlist",
+		Type:      "TestType",
+	}
+
+	buf := &bytes.Buffer{}
+
+	if err := SqlType(buf, scanner); err != nil {
+		t.Fatal(err)
+	}
+
+	if buf.Len() == 0 {
+		t.Fatalf("Nothing generated")
+	}
+
+	fmt.Println(buf.String())
 }
