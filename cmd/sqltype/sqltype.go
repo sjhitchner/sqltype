@@ -70,13 +70,16 @@ import (
 func (t *{{ .Type }}) Scan(value interface{}) error {
 	
 	{{if eq .Primative "string"}}
-
-		b, ok := value.([]byte)
-		if !ok {
+	switch v := value.(type) {
+		case []byte:
+			*t = {{ .Type }}(string(v))
+		case string:
+			*t = {{ .Type }}(v)
+		case *string:
+			*t = {{ .Type }}(*v)
+		default:
 			return fmt.Errorf("%s Can't convert '%v' to string", reflect.TypeOf(t), value)
-		}
-		*t = {{ .Type }}(string(b))
-
+	}
 	{{else if eq .Primative "int"}}
 
 		b, ok := value.([]byte)
