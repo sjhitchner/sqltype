@@ -32,14 +32,15 @@ const SelectSQL = "SELECT id, field1, field3, field4, field5, field7, field8 FRO
 //go:generate sqltype -primative string -type Id
 type Id string
 
+//go:generate sqltype -primative bool -type Bool
 type Bool bool
 
-//go   generate sqltype -primative string -type time.Time
+type Int int
+
 type Time time.Time
 
 //go:generate sqltype -primative pythondict -type Dictionary
 type Dictionary map[string]interface{}
-type Int int
 type Float float32
 type List string
 

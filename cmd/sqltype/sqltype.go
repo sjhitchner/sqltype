@@ -55,7 +55,7 @@ import (
 	"fmt"
 	"reflect"
 	"database/sql/driver"
-	{{if eq .Primative "int"}}
+	{{if or (eq .Primative "int") (eq .Primative "bool") }}
 	"strconv"
 	{{end}}
 	{{if or (eq .Primative "pythondict") (eq .Primative "pythonlist") }}
@@ -68,80 +68,71 @@ import (
 )
 
 func (t *{{ .Type }}) Scan(value interface{}) error {
+
+	if value == nil {
+		return nil
+	}
 	
-	{{if eq .Primative "string"}}
 	switch v := value.(type) {
+	{{if eq .Primative "string"}}
 		case []byte:
 			*t = {{ .Type }}(string(v))
+
 		case string:
 			*t = {{ .Type }}(v)
+
 		case *string:
 			*t = {{ .Type }}(*v)
-		default:
-			return fmt.Errorf("%s Can't convert '%v' to string", reflect.TypeOf(t), value)
-	}
+
 	{{else if eq .Primative "int"}}
+		case []byte:
+			i, err := strconv.Atoi(string(v))
+			if err != nil {
+				return fmt.Errorf("%s Can't convert '%v' to int %v", reflect.TypeOf(t), value, err)
+			}
+			*t = {{ .Type }}(i)
 
-		b, ok := value.([]byte)
-		if !ok {
-			return fmt.Errorf("%s Can't convert '%v' to []byte", reflect.TypeOf(t), value)
-		}
+		case int:
+			*t = {{ .Type }}(v)
 
-		i, err := strconv.Atoi(string(b))
-		if err != nil {
-			return fmt.Errorf("%s Can't convert '%v' to int %v", reflect.TypeOf(t), value, err)
-		}
-		*t = {{ .Type }}(i)
+		case *int:
+			*t = {{ .Type }}(*v)
 
 	{{else if eq .Primative "bool"}}
+		case []byte:
+			b, err := strconv.ParseBool(string(v))
+			if err != nil {
+				return fmt.Errorf("%s Can't convert '%v' to bool %v", reflect.TypeOf(t), value, err)
+			}
+			*t = {{ .Type }}(b)
 
-		b, ok := value.([]byte)
-		if !ok {
-			return fmt.Errorf("%s Can't convert '%v' to []byte", reflect.TypeOf(t), value)
-		}
+		case bool:
+			*t = {{ .Type }}(v)
 
-		b, err := strconv.ParseBool(string(b))
-		if err != nil {
-			return fmt.Errorf("%s Can't convert '%v' to int %v", reflect.TypeOf(t), value, err)
-		}
-		*t = {{ .Type }}(b)
+		case *bool:
+			*t = {{ .Type }}(*v)
 
 	{{else if eq .Primative  "pythondict"}}
-
-		if value == nil {
-			return nil
-		}
-
-		b, ok := value.([]byte)
-		if !ok {
-			return fmt.Errorf("%s Can't convert '%v' to []byte", reflect.TypeOf(t), value)
-		}
-
-		dict, err := pickle.DictString(pickle.Unpickle(bytes.NewReader(b)))
-		if err != nil {
-			return fmt.Errorf("%s Can't convert '%v' to dict %v", reflect.TypeOf(t), value, err)
-		}
-		*t = {{ .Type }}(dict)
+		case []byte:
+			dict, err := pickle.DictString(pickle.Unpickle(bytes.NewReader(v)))
+			if err != nil {
+				return fmt.Errorf("%s Can't convert '%v' to dict %v", reflect.TypeOf(t), value, err)
+			}
+			*t = {{ .Type }}(dict)
 
 	{{else if eq .Primative  "pythonlist"}}
-
-		if value == nil {
-			return nil
-		}
-
-		b, ok := value.([]byte)
-		if !ok {
-			return fmt.Errorf("%s Can't convert '%v' to []byte", reflect.TypeOf(t), value)
-		}
-
-		list := make({{ .Type }},0)
-		err := pickle.UnpackInto(&list).From(pickle.Unpickle(bytes.NewReader(b)))
-		if err != nil {
-			return fmt.Errorf("%s Can't convert '%v' to list %v", reflect.TypeOf(t), value, err)
-		}
-		*t = list
+		case []byte:
+			list := make({{ .Type }},0)
+			err := pickle.UnpackInto(&list).From(pickle.Unpickle(bytes.NewReader(v)))
+			if err != nil {
+				return fmt.Errorf("%s Can't convert '%v' to list %v", reflect.TypeOf(t), value, err)
+			}
+			*t = list
 
 	{{end}}
+		default:
+			return fmt.Errorf("%s Can't convert '%v' to {{ .Primative }}", reflect.TypeOf(t), value)
+	}
 
 	return nil
 }
@@ -213,6 +204,10 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if err := validatePrimative(primativeType); err != nil {
+		log.Fatal(err)
+	}
+
 	scanner := Scanner{
 		Package:   packageName,
 		Primative: primativeType,
@@ -260,6 +255,21 @@ func getPackageName() (string, error) {
 	}
 
 	return pkg.Name, err
+}
+
+func validatePrimative(primativeType string) error {
+	switch primativeType {
+	case "string":
+		fallthrough
+	case "bool":
+		fallthrough
+	case "pythondict":
+		fallthrough
+	case "pythonlist":
+		return nil
+	default:
+		return errors.Errorf("Invalid primative '%s'", primativeType)
+	}
 }
 
 /*
