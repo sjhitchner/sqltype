@@ -58,7 +58,7 @@ import (
 	{{if or (eq .Primative "int") (eq .Primative "bool") }}
 	"strconv"
 	{{end}}
-	{{if or (eq .Primative "pythondict") (eq .Primative "pythonlist") }}
+	{{if or (eq .Primative "pythondict") (eq .Primative "pythonstringdict") }}
 	"bytes"
 	pickle "github.com/hydrogen18/stalecucumber"
 	{{else if eq .Primative "pythonlist"}}
@@ -114,6 +114,14 @@ func (t *{{ .Type }}) Scan(value interface{}) error {
 
 	{{else if eq .Primative  "pythondict"}}
 		case []byte:
+			dict, err := pickle.Dict(pickle.Unpickle(bytes.NewReader(v)))
+			if err != nil {
+				return fmt.Errorf("%s Can't convert '%v' to dict %v", reflect.TypeOf(t), value, err)
+			}
+			*t = {{ .Type }}(dict)
+
+	{{else if eq .Primative  "pythonstringdict"}}
+		case []byte:
 			dict, err := pickle.DictString(pickle.Unpickle(bytes.NewReader(v)))
 			if err != nil {
 				return fmt.Errorf("%s Can't convert '%v' to dict %v", reflect.TypeOf(t), value, err)
@@ -139,7 +147,7 @@ func (t *{{ .Type }}) Scan(value interface{}) error {
 
 func (t {{ .Type }}) Value() (driver.Value, error) {
 
-	{{if or (eq .Primative "pythondict") (eq .Primative "pythonlist") }}
+	{{if or (eq .Primative "pythondict") (eq .Primative "pythonlist") (eq .Primative "pythonstringdict") }}
 		buf := new(bytes.Buffer)
 		if _, err := pickle.NewPickler(buf).Pickle(t); err != nil {
 			return nil, err
@@ -262,6 +270,8 @@ func validatePrimative(primativeType string) error {
 	case "string":
 		fallthrough
 	case "bool":
+		fallthrough
+	case "pythonstringdict":
 		fallthrough
 	case "pythondict":
 		fallthrough
