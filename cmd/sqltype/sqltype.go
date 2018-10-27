@@ -1,3 +1,21 @@
+// Utilities to Generate SQL Scanners for custom Go primatives
+//
+// Usage:
+// go:generate sqltype -type=<type> -primative=<primative>
+//
+// type is the name of the custom defined type
+//
+// primative is one of:
+//    int64
+//    float64
+//    bool
+//    []byte
+//    string
+//    time.Time
+//
+// Primative should make the primative of the custom defined type
+//
+// nil - for NULL values
 package main
 
 import (
@@ -14,35 +32,6 @@ import (
 	"strings"
 	"text/template"
 )
-
-// value is one of these
-//    int64
-//    float64
-//    bool
-//    []byte
-//    string
-//    time.Time
-//    nil - for NULL values
-
-/*
-
-)
-
-
-func (t *{{ .Type }}) Scan(value interface{}) error {
-	s, ok := value.({{ .Primative }})
-	if !ok {
-		return fmt.Errorf("Can't convert %v to {{ .Primative }}", value)
-	}
-
-	*t = {{ .Type }}(s)
-	return nil
-}
-
-func (t {{ .Type }}) Value() (driver.Value, error) {
-	return {{ .Primative }}(t), nil
-}
-*/
 
 const StringTemplate = ``
 
@@ -266,20 +255,21 @@ func getPackageName() (string, error) {
 }
 
 func validatePrimative(primativeType string) error {
-	switch primativeType {
-	case "string":
-		fallthrough
-	case "bool":
-		fallthrough
-	case "pythonstringdict":
-		fallthrough
-	case "pythondict":
-		fallthrough
-	case "pythonlist":
-		return nil
-	default:
+	validTypes := map[string]bool{
+		"int":              true,
+		"int64":            true,
+		"string":           true,
+		"bool":             true,
+		"pythonstringdict": true,
+		"pythondict":       true,
+		"pythonlist":       true,
+	}
+
+	if _, found := validTypes[primativeType]; !found {
 		return errors.Errorf("Invalid primative '%s'", primativeType)
 	}
+
+	return nil
 }
 
 /*
