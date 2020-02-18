@@ -53,6 +53,10 @@ import (
 	{{else if eq .Primative "pythonlist"}}
 	"bytes"
 	pickle "github.com/hydrogen18/stalecucumber"
+	{{else if eq .Primative "pythonlist"}}
+	"encoding/json"
+	{{else if eq .Primative "json"}}
+	"encoding/json"
 	{{end}}
 )
 
@@ -77,7 +81,7 @@ func (t *{{ .Type }}) Scan(value interface{}) error {
 		case []byte:
 			i, err := strconv.Atoi(string(v))
 			if err != nil {
-				return fmt.Errorf("%s Can't convert '%v' to int %v", reflect.TypeOf(t), value, err)
+				return fmt.Errorf("sqltype: %s Can't convert '%v' to int %v", reflect.TypeOf(t), value, err)
 			}
 			*t = {{ .Type }}(i)
 
@@ -91,7 +95,7 @@ func (t *{{ .Type }}) Scan(value interface{}) error {
 		case []byte:
 			b, err := strconv.ParseBool(string(v))
 			if err != nil {
-				return fmt.Errorf("%s Can't convert '%v' to bool %v", reflect.TypeOf(t), value, err)
+				return fmt.Errorf("sqltype: %s Can't convert '%v' to bool %v", reflect.TypeOf(t), value, err)
 			}
 			*t = {{ .Type }}(b)
 
@@ -105,7 +109,7 @@ func (t *{{ .Type }}) Scan(value interface{}) error {
 		case []byte:
 			dict, err := pickle.Dict(pickle.Unpickle(bytes.NewReader(v)))
 			if err != nil {
-				return fmt.Errorf("%s Can't convert '%v' to dict %v", reflect.TypeOf(t), value, err)
+				return fmt.Errorf("sqltype: %s Can't convert '%v' to dict %v", reflect.TypeOf(t), value, err)
 			}
 			*t = {{ .Type }}(dict)
 
@@ -113,7 +117,7 @@ func (t *{{ .Type }}) Scan(value interface{}) error {
 		case []byte:
 			dict, err := pickle.DictString(pickle.Unpickle(bytes.NewReader(v)))
 			if err != nil {
-				return fmt.Errorf("%s Can't convert '%v' to dict %v", reflect.TypeOf(t), value, err)
+				return fmt.Errorf("sqltype: %s Can't convert '%v' to dict %v", reflect.TypeOf(t), value, err)
 			}
 			*t = {{ .Type }}(dict)
 
@@ -122,13 +126,21 @@ func (t *{{ .Type }}) Scan(value interface{}) error {
 			list := make({{ .Type }},0)
 			err := pickle.UnpackInto(&list).From(pickle.Unpickle(bytes.NewReader(v)))
 			if err != nil {
-				return fmt.Errorf("%s Can't convert '%v' to list %v", reflect.TypeOf(t), value, err)
+				return fmt.Errorf("sqltype: %s Can't convert '%v' to list %v", reflect.TypeOf(t), value, err)
 			}
 			*t = list
 
+	{{else if eq .Primative "json"}}
+		case []byte:
+			var obj {{ .Type }}
+			if err := json.Unmarshal(v, &obj); err != nil {
+				return fmt.Errorf("sqltype: can't convert json '%v' to %s %v", value, reflect.TypeOf(t), err)
+			}
+			*t = obj
+
 	{{end}}
 		default:
-			return fmt.Errorf("%s Can't convert '%v' to {{ .Primative }}", reflect.TypeOf(t), value)
+			return fmt.Errorf("sqltype: %s Can't convert '%v' to {{ .Primative }}", reflect.TypeOf(t), value)
 	}
 
 	return nil
@@ -142,6 +154,12 @@ func (t {{ .Type }}) Value() (driver.Value, error) {
 			return nil, err
 		}
 		return buf.Bytes(), nil
+	{{else if eq .Primative "json"}}
+		b, err := json.Marshal(t)
+		if err != nil {
+			return nil, err
+		}
+		return b, nil
 	{{else}}
 		return {{ .Primative }}(t), nil
 	{{end}}
@@ -177,16 +195,26 @@ type Scanner struct {
 var (
 	primativeType string
 	typeName      string
+	version       bool
+
+	Sha    string
+	Branch string
 )
 
 func init() {
 	flag.StringVar(&primativeType, "primative", "", "Corresponding primative type")
 	flag.StringVar(&typeName, "type", "", "Name of type")
+	flag.BoolVar(&version, "version", false, "Version of sqltype")
 }
 
 func main() {
 	log.SetFlags(0)
 	flag.Parse()
+
+	if version {
+		fmt.Printf("Sha: %s, Branch: %s\n", Sha, Branch)
+		os.Exit(-1)
+	}
 
 	if typeName == "" {
 		log.Fatal("Need to provide --type")
@@ -263,6 +291,7 @@ func validatePrimative(primativeType string) error {
 		"pythonstringdict": true,
 		"pythondict":       true,
 		"pythonlist":       true,
+		"json":             true,
 	}
 
 	if _, found := validTypes[primativeType]; !found {
