@@ -81,7 +81,7 @@ func (t *{{ .Type }}) Scan(value interface{}) error {
 		case []byte:
 			i, err := strconv.Atoi(string(v))
 			if err != nil {
-				return fmt.Errorf("sqltype: %s Can't convert '%v' to int %v", reflect.TypeOf(t), value, err)
+				return fmt.Errorf("sqltype: %s Can't convert '%s' to int %v", reflect.TypeOf(t), value, err)
 			}
 			*t = {{ .Type }}(i)
 
@@ -95,7 +95,7 @@ func (t *{{ .Type }}) Scan(value interface{}) error {
 		case []byte:
 			b, err := strconv.ParseBool(string(v))
 			if err != nil {
-				return fmt.Errorf("sqltype: %s Can't convert '%v' to bool %v", reflect.TypeOf(t), value, err)
+				return fmt.Errorf("sqltype: %s Can't convert '%s' to bool %v", reflect.TypeOf(t), value, err)
 			}
 			*t = {{ .Type }}(b)
 
@@ -109,7 +109,7 @@ func (t *{{ .Type }}) Scan(value interface{}) error {
 		case []byte:
 			dict, err := pickle.Dict(pickle.Unpickle(bytes.NewReader(v)))
 			if err != nil {
-				return fmt.Errorf("sqltype: %s Can't convert '%v' to dict %v", reflect.TypeOf(t), value, err)
+				return fmt.Errorf("sqltype: %s Can't convert '%s' to dict %v", reflect.TypeOf(t), value, err)
 			}
 			*t = {{ .Type }}(dict)
 
@@ -117,7 +117,7 @@ func (t *{{ .Type }}) Scan(value interface{}) error {
 		case []byte:
 			dict, err := pickle.DictString(pickle.Unpickle(bytes.NewReader(v)))
 			if err != nil {
-				return fmt.Errorf("sqltype: %s Can't convert '%v' to dict %v", reflect.TypeOf(t), value, err)
+				return fmt.Errorf("sqltype: %s Can't convert '%s' to dict %v", reflect.TypeOf(t), value, err)
 			}
 			*t = {{ .Type }}(dict)
 
@@ -126,7 +126,7 @@ func (t *{{ .Type }}) Scan(value interface{}) error {
 			list := make({{ .Type }},0)
 			err := pickle.UnpackInto(&list).From(pickle.Unpickle(bytes.NewReader(v)))
 			if err != nil {
-				return fmt.Errorf("sqltype: %s Can't convert '%v' to list %v", reflect.TypeOf(t), value, err)
+				return fmt.Errorf("sqltype: %s Can't convert '%s' to list %v", reflect.TypeOf(t), value, err)
 			}
 			*t = list
 
@@ -134,13 +134,13 @@ func (t *{{ .Type }}) Scan(value interface{}) error {
 		case []byte:
 			var obj {{ .Type }}
 			if err := json.Unmarshal(v, &obj); err != nil {
-				return fmt.Errorf("sqltype: can't convert json '%v' to %s %v", value, reflect.TypeOf(t), err)
+				return fmt.Errorf("sqltype: can't convert json '%s' to %s %v", value, reflect.TypeOf(t), err)
 			}
 			*t = obj
 
 	{{end}}
 		default:
-			return fmt.Errorf("sqltype: %s Can't convert '%v' to {{ .Primative }}", reflect.TypeOf(t), value)
+			return fmt.Errorf("sqltype: %s Can't convert '%s' to {{ .Primative }}", reflect.TypeOf(t), value)
 	}
 
 	return nil
